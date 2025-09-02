@@ -20,3 +20,8 @@ spring:
     clean-disabled: false
 server:
   port: 8080
+app:
+  jwt:
+    secret: "sagjfagslakgnwijeinkfdnglkgnaoewiethergndlfngbadlfgnasngldagughdlanfgkdnghsldnfherghdlgndfnhsldfhnsldfhnalqjsgog"
+    access-exp-minutes: 15
+    refresh-exp-days: 14
