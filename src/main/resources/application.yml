@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: e-commerce-services
+  main:
+    banner-mode: "off"
+  profiles:
+    active:
+      - local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/services_db
+    username: postgres
+    password: Naul126@/
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  flyway:
+    locations: classpath:db/migration/postgres
+    baseline-on-migrate: true
+    clean-disabled: false
+server:
+  port: 8080
