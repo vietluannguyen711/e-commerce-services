@@ -238,4 +238,118 @@ public class ProductSearchService {
         }
         return new org.springframework.data.domain.PageImpl<>(items, pageable, total.longValue());
     }
+
+    /**
+     * FEATURED: lấy sản phẩm có cờ products.is_featured = true
+     */
+    public List<ProductListItemDto> getFeatured(int limit) {
+        String sql = """
+            SELECT
+              p.id,
+              p.slug,
+              p.title,
+              (SELECT url FROM product_images i
+                 WHERE i.product_id = p.id
+                 ORDER BY i.position ASC LIMIT 1) AS thumbnail,
+              (SELECT MIN(v.price) FROM variants v WHERE v.product_id = p.id) AS min_price,
+              (SELECT MAX(v.price) FROM variants v WHERE v.product_id = p.id) AS max_price
+            FROM products p
+            WHERE p.is_featured = TRUE
+            ORDER BY p.updated_at DESC
+            LIMIT :limit
+            """;
+        Query q = em.createNativeQuery(sql);
+        q.setParameter("limit", limit);
+        return mapListItems(q.getResultList());
+    }
+
+    /**
+     * TOP RATED: dựa vào bảng product_rating_summary (rating_avg/rating_count)
+     */
+    public List<ProductListItemDto> getTopRated(int minReviews, int limit) {
+        String sql = """
+            SELECT
+              p.id,
+              p.slug,
+              p.title,
+              (SELECT url FROM product_images i
+                 WHERE i.product_id = p.id
+                 ORDER BY i.position ASC LIMIT 1) AS thumbnail,
+              (SELECT MIN(v.price) FROM variants v WHERE v.product_id = p.id) AS min_price,
+              (SELECT MAX(v.price) FROM variants v WHERE v.product_id = p.id) AS max_price
+            FROM products p
+            JOIN product_rating_summary prs ON prs.product_id = p.id
+            WHERE prs.rating_count >= :minReviews
+            ORDER BY prs.rating_avg DESC, prs.rating_count DESC, p.updated_at DESC
+            LIMIT :limit
+            """;
+        Query q = em.createNativeQuery(sql);
+        q.setParameter("minReviews", minReviews);
+        q.setParameter("limit", limit);
+        return mapListItems(q.getResultList());
+    }
+
+    /**
+     * ON SALE: có ít nhất 1 SKU đang giảm (sale_price < price và trong khoảng
+     * thời gian)
+     */
+    public List<ProductListItemDto> getOnSale(int limit) {
+        String sql = """
+            WITH agg AS (
+              SELECT
+                v.product_id,
+                -- giá hiệu lực (nếu đang sale thì lấy sale_price, else price)
+                MIN(CASE WHEN v.sale_price IS NOT NULL
+                          AND v.sale_price < v.price
+                          AND (now() >= COALESCE(v.sale_start, now()))
+                          AND (now() <= COALESCE(v.sale_end,   now()))
+                         THEN v.sale_price ELSE v.price END) AS min_effective,
+                MAX(CASE WHEN v.sale_price IS NOT NULL
+                          AND v.sale_price < v.price
+                          AND (now() >= COALESCE(v.sale_start, now()))
+                          AND (now() <= COALESCE(v.sale_end,   now()))
+                         THEN v.sale_price ELSE v.price END) AS max_effective,
+                BOOL_OR(v.sale_price IS NOT NULL
+                        AND v.sale_price < v.price
+                        AND (now() >= COALESCE(v.sale_start, now()))
+                        AND (now() <= COALESCE(v.sale_end,   now()))) AS any_sale
+              FROM variants v
+              GROUP BY v.product_id
+            )
+            SELECT
+              p.id,
+              p.slug,
+              p.title,
+              (SELECT url FROM product_images i
+                 WHERE i.product_id = p.id
+                 ORDER BY i.position ASC LIMIT 1) AS thumbnail,
+              a.min_effective AS min_price,
+              a.max_effective AS max_price
+            FROM products p
+            JOIN agg a ON a.product_id = p.id
+            WHERE a.any_sale = TRUE
+            ORDER BY p.updated_at DESC
+            LIMIT :limit
+            """;
+        Query q = em.createNativeQuery(sql);
+        q.setParameter("limit", limit);
+        return mapListItems(q.getResultList());
+    }
+
+    // ----- mapper -----
+    @SuppressWarnings("unchecked")
+    private List<ProductListItemDto> mapListItems(List<?> rawRows) {
+        List<ProductListItemDto> items = new ArrayList<>();
+        for (Object row : rawRows) {
+            Object[] r = (Object[]) row;
+            Long id = ((Number) r[0]).longValue();
+            String slug = (String) r[1];
+            String title = (String) r[2];
+            String thumbnail = (String) r[3];
+            Integer minPrice = r[4] == null ? 0 : ((Number) r[4]).intValue();
+            Integer maxPrice = r[5] == null ? 0 : ((Number) r[5]).intValue();
+            items.add(new ProductListItemDto(id, slug, title, thumbnail, minPrice, maxPrice));
+        }
+        return items;
+    }
 }

@@ -1,5 +1,7 @@
 package com.example.e_commerce_services.controller;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +34,6 @@ public class ProductController {
     // public List<ProductListItemDto> listByCategory(@RequestParam("category") String categorySlug) {
     //     return service.listByCategorySlug(categorySlug);
     // }
-
     @GetMapping("/{slug}")
     public ProductDetailDto getBySlug(@PathVariable String slug) {
         return service.getBySlug(slug);
@@ -53,4 +54,23 @@ public class ProductController {
         Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
         return searchService.searchWithSort(categorySlug, q, priceMin, priceMax, attrs, sort, pageable);
     }
+
+    @GetMapping("/featured")
+    public List<ProductListItemDto> featured(@RequestParam(defaultValue = "12") int limit) {
+        return searchService.getFeatured(limit);
+    }
+
+    @GetMapping("/top-rated")
+    public List<ProductListItemDto> topRated(@RequestParam(defaultValue = "5") int minReviews,
+            @RequestParam(defaultValue = "12") int limit) {
+        return searchService.getTopRated(minReviews, limit);
+    }
+
+    @GetMapping("/on-sale")
+    public List<ProductListItemDto> onSale(@RequestParam(defaultValue = "12") int limit) {
+        return searchService.getOnSale(limit);
+    }
+
+
+    
 }

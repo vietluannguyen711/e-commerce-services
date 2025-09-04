@@ -1,5 +1,7 @@
 package com.example.e_commerce_services.domain;
 
+import java.time.Instant;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -29,5 +31,11 @@ public class ProductImage {
     @Column(nullable = false)
     private Integer position = 0;
 
+    @Column(nullable = false)
+    private String fileName;  // uuid.jpg
+    @Column(nullable = false)
+    private boolean isMain = false;
+    @Column(nullable = false)
+    private Instant createdAt = Instant.now();
     // getters/setters ...
 }

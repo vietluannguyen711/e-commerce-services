@@ -106,6 +106,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleAny(Exception ex, HttpServletRequest req) {
         // TODO: log requestId + stacktrace ở đây (logger)
+        ex.printStackTrace();
         return build(INTERNAL_ERROR, "Đã có lỗi xảy ra. Vui lòng thử lại.", null, req, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
