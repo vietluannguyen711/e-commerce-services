@@ -34,7 +34,7 @@ public class ProductController {
     // public List<ProductListItemDto> listByCategory(@RequestParam("category") String categorySlug) {
     //     return service.listByCategorySlug(categorySlug);
     // }
-    @GetMapping("/{slug}")
+    @GetMapping("/slug/{slug}")
     public ProductDetailDto getBySlug(@PathVariable String slug) {
         return service.getBySlug(slug);
     }
